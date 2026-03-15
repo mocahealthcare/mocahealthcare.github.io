@@ -202,6 +202,19 @@ function TrailMakingScreen({ onNext }: { onNext: () => void }) {
     return pairs;
   }, [selected]);
 
+  const guideLines = useMemo(() => {
+    const guideSequence: NodeId[] = ["1", "A", "2"];
+    const pairs: Array<{ from: NodeItem; to: NodeItem }> = [];
+
+    for (let i = 0; i < guideSequence.length - 1; i++) {
+      const from = NODES.find((n) => n.id === guideSequence[i]);
+      const to = NODES.find((n) => n.id === guideSequence[i + 1]);
+      if (from && to) pairs.push({ from, to });
+    }
+
+    return pairs;
+  }, []);
+
   function handleNodeClick(id: NodeId) {
     if (completed) return;
 
@@ -238,6 +251,20 @@ function TrailMakingScreen({ onNext }: { onNext: () => void }) {
 
   function nodeIsPrimaryHint(node: NodeItem) {
     return selected.length === 0 ? node.id === "1" : false;
+  }
+
+  function getLineEndpoints(from: NodeItem, to: NodeItem) {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const length = Math.hypot(dx, dy) || 1;
+    const inset = NODE_R - 2;
+
+    return {
+      x1: from.x + (dx / length) * inset,
+      y1: from.y + (dy / length) * inset,
+      x2: to.x - (dx / length) * inset,
+      y2: to.y - (dy / length) * inset,
+    };
   }
 
   return (
@@ -280,20 +307,60 @@ function TrailMakingScreen({ onNext }: { onNext: () => void }) {
           <div className="rounded-[28px] border bg-white p-3 md:p-5 shadow-sm">
             <div className="w-full overflow-hidden rounded-[24px] bg-neutral-50">
               <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="h-auto w-full">
+                <defs>
+                  <marker
+                    id="trail-guide-arrow"
+                    viewBox="0 0 10 10"
+                    refX="8"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#737373" />
+                  </marker>
+                </defs>
+
+                {selected.length === 0 &&
+                  guideLines.map((line, idx) => {
+                    const points = getLineEndpoints(line.from, line.to);
+                    return (
+                      <motion.line
+                        key={`guide-${line.from.id}-${line.to.id}-${idx}`}
+                        x1={points.x1}
+                        y1={points.y1}
+                        x2={points.x2}
+                        y2={points.y2}
+                        stroke="#737373"
+                        strokeWidth="3"
+                        strokeDasharray="8 8"
+                        markerEnd="url(#trail-guide-arrow)"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.9 }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    );
+                  })}
+
                 {pathLines.map((line, idx) => (
-                  <motion.line
-                    key={`${line.from.id}-${line.to.id}-${idx}`}
-                    x1={line.from.x}
-                    y1={line.from.y}
-                    x2={line.to.x}
-                    y2={line.to.y}
-                    stroke="currentColor"
-                    strokeWidth="3.5"
-                    className="text-neutral-900"
-                    initial={{ pathLength: 0, opacity: 0.3 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{ duration: 0.25 }}
-                  />
+                  (() => {
+                    const points = getLineEndpoints(line.from, line.to);
+                    return (
+                      <motion.line
+                        key={`${line.from.id}-${line.to.id}-${idx}`}
+                        x1={points.x1}
+                        y1={points.y1}
+                        x2={points.x2}
+                        y2={points.y2}
+                        stroke="currentColor"
+                        strokeWidth="3.5"
+                        className="text-neutral-900"
+                        initial={{ pathLength: 0, opacity: 0.3 }}
+                        animate={{ pathLength: 1, opacity: 1 }}
+                        transition={{ duration: 0.25 }}
+                      />
+                    );
+                  })()
                 ))}
 
                 {NODES.map((node) => {
@@ -431,6 +498,7 @@ function DrawingQuestionScreen({ mode }: { mode: "cube" | "clock" }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const currentStrokeRef = useRef<Point[]>([]);
+  const isDrawingRef = useRef(false);
 
   const title = mode === "cube" ? t("临摹立方体", "Cube Copy") : t("画钟题", "Clock Drawing");
   const subtitle =
@@ -462,7 +530,7 @@ function DrawingQuestionScreen({ mode }: { mode: "cube" | "clock" }) {
 
   useEffect(() => {
     redraw();
-  }, [strokes, mode, hasStarted]);
+  }, [strokes, mode, hasStarted, language]);
 
   function getCtx() {
     return canvasRef.current?.getContext("2d") ?? null;
@@ -487,17 +555,11 @@ function DrawingQuestionScreen({ mode }: { mode: "cube" | "clock" }) {
     ctx.lineWidth = 2.6;
 
     for (const stroke of strokes) {
-      if (stroke.points.length === 0) continue;
-      ctx.beginPath();
-      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-      for (let i = 1; i < stroke.points.length; i++) {
-        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
-      }
-      if (stroke.points.length === 1) {
-        const p = stroke.points[0];
-        ctx.arc(p.x, p.y, 0.8, 0, Math.PI * 2);
-      }
-      ctx.stroke();
+      drawStroke(ctx, stroke.points);
+    }
+
+    if (isDrawingRef.current && currentStrokeRef.current.length > 0) {
+      drawStroke(ctx, currentStrokeRef.current);
     }
 
     if (!hasStarted) {
@@ -510,6 +572,25 @@ function DrawingQuestionScreen({ mode }: { mode: "cube" | "clock" }) {
     }
   }
 
+  function drawStroke(ctx: CanvasRenderingContext2D, points: Point[]) {
+    if (points.length === 0) return;
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+
+    if (points.length === 1) {
+      const p = points[0];
+      ctx.arc(p.x, p.y, 0.8, 0, Math.PI * 2);
+      ctx.stroke();
+      return;
+    }
+
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+  }
+
   function pointFromEvent(e: React.PointerEvent<HTMLCanvasElement>): Point {
     const rect = e.currentTarget.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -520,37 +601,32 @@ function DrawingQuestionScreen({ mode }: { mode: "cube" | "clock" }) {
     e.currentTarget.setPointerCapture(e.pointerId);
     const point = pointFromEvent(e);
     currentStrokeRef.current = [point];
+    isDrawingRef.current = true;
     setIsDrawing(true);
     setHasStarted(true);
+    redraw();
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
-    if (!isDrawing) return;
+    if (!isDrawingRef.current) return;
     const point = pointFromEvent(e);
     currentStrokeRef.current = [...currentStrokeRef.current, point];
-
-    const ctx = getCtx();
-    if (!ctx) return;
-    const pts = currentStrokeRef.current;
-    const len = pts.length;
-    if (len < 2) return;
-
-    ctx.beginPath();
-    ctx.moveTo(pts[len - 2].x, pts[len - 2].y);
-    ctx.lineTo(pts[len - 1].x, pts[len - 1].y);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#171717";
-    ctx.lineWidth = 2.6;
-    ctx.stroke();
+    redraw();
   }
 
-  function finishStroke() {
-    if (currentStrokeRef.current.length > 0) {
-      setStrokes((prev) => [...prev, { points: currentStrokeRef.current }]);
+  function finishStroke(e?: React.PointerEvent<HTMLCanvasElement>) {
+    if (e && e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+
+    const finishedPoints = [...currentStrokeRef.current];
+    if (finishedPoints.length > 0) {
+      setStrokes((prev) => [...prev, { points: finishedPoints }]);
     }
     currentStrokeRef.current = [];
+    isDrawingRef.current = false;
     setIsDrawing(false);
+    redraw();
   }
 
   function undoStroke() {
@@ -561,6 +637,7 @@ function DrawingQuestionScreen({ mode }: { mode: "cube" | "clock" }) {
     setStrokes([]);
     setHasStarted(false);
     currentStrokeRef.current = [];
+    isDrawingRef.current = false;
     setIsDrawing(false);
   }
 
@@ -619,7 +696,7 @@ function DrawingQuestionScreen({ mode }: { mode: "cube" | "clock" }) {
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={finishStroke}
-                onPointerLeave={() => isDrawing && finishStroke()}
+                onPointerLeave={() => isDrawingRef.current && finishStroke()}
                 onPointerCancel={finishStroke}
               />
             </div>
