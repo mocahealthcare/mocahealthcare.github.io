@@ -147,17 +147,17 @@ export default function MocaUiPrototype() {
           </div>
 
           {screen === "trail" ? <TrailMakingScreen onNext={() => setScreen("draw-cube")} /> : null}
-          {screen === "draw-cube" ? <DrawingQuestionScreen mode="cube" /> : null}
-          {screen === "draw-clock" ? <DrawingQuestionScreen mode="clock" /> : null}
-          {screen === "naming" ? <NamingScreen /> : null}
-          {screen === "memory" ? <MemoryLearningScreen /> : null}
-          {screen === "attention-digits" ? <AttentionDigitScreen /> : null}
-          {screen === "attention-a" ? <AttentionAScreen /> : null}
-          {screen === "serial-7" ? <SerialSevenScreen /> : null}
-          {screen === "language-repeat" ? <LanguageRepeatScreen /> : null}
-          {screen === "language-fluency" ? <LanguageFluencyScreen /> : null}
-          {screen === "abstraction" ? <AbstractionScreen /> : null}
-          {screen === "delayed-recall" ? <DelayedRecallScreen /> : null}
+          {screen === "draw-cube" ? <DrawingQuestionScreen mode="cube" onNext={() => setScreen("draw-clock")} /> : null}
+          {screen === "draw-clock" ? <DrawingQuestionScreen mode="clock" onNext={() => setScreen("naming")} /> : null}
+          {screen === "naming" ? <NamingScreen onNext={() => setScreen("memory")} /> : null}
+          {screen === "memory" ? <MemoryLearningScreen onNext={() => setScreen("attention-digits")} /> : null}
+          {screen === "attention-digits" ? <AttentionDigitScreen onNext={() => setScreen("attention-a")} /> : null}
+          {screen === "attention-a" ? <AttentionAScreen onNext={() => setScreen("serial-7")} /> : null}
+          {screen === "serial-7" ? <SerialSevenScreen onNext={() => setScreen("language-repeat")} /> : null}
+          {screen === "language-repeat" ? <LanguageRepeatScreen onNext={() => setScreen("language-fluency")} /> : null}
+          {screen === "language-fluency" ? <LanguageFluencyScreen onNext={() => setScreen("abstraction")} /> : null}
+          {screen === "abstraction" ? <AbstractionScreen onNext={() => setScreen("delayed-recall")} /> : null}
+          {screen === "delayed-recall" ? <DelayedRecallScreen onNext={() => setScreen("orientation")} /> : null}
           {screen === "orientation" ? <OrientationScreen onComplete={() => setScreen("result")} /> : null}
           {screen === "result" ? <ResultScreen /> : null}
         </div>
@@ -489,7 +489,7 @@ function TrailMakingScreen({ onNext }: { onNext: () => void }) {
   );
 }
 
-function DrawingQuestionScreen({ mode }: { mode: "cube" | "clock" }) {
+function DrawingQuestionScreen({ mode, onNext }: { mode: "cube" | "clock"; onNext: () => void }) {
   const { t, language } = useI18n();
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -734,7 +734,7 @@ function DrawingQuestionScreen({ mode }: { mode: "cube" | "clock" }) {
                     <HelpCircle className="mr-2 h-4 w-4" />{showHelp ? t("收起帮助", "Hide help") : t("查看帮助", "Show help")}
                   </Button>
 
-                  <Button className="h-12 justify-start rounded-2xl text-base">
+                  <Button onClick={onNext} className="h-12 justify-start rounded-2xl text-base">
                     <ArrowRight className="mr-2 h-4 w-4" />{t("下一题", "Next task")}
                   </Button>
                 </div>
@@ -1052,7 +1052,7 @@ function OrientationScreen({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-function DelayedRecallScreen() {
+function DelayedRecallScreen({ onNext }: { onNext: () => void }) {
   const { t } = useI18n();
   const [answers, setAnswers] = useState(["", "", "", "", ""]);
   const [showCues, setShowCues] = useState(false);
@@ -1212,7 +1212,7 @@ function DelayedRecallScreen() {
                     <HelpCircle className="mr-2 h-4 w-4" />{showHelp ? t("收起帮助", "Hide help") : t("查看帮助", "Show help")}
                   </Button>
 
-                  <Button disabled={filledCount === 0} className="h-12 justify-start rounded-2xl text-base">
+                  <Button onClick={onNext} disabled={filledCount === 0} className="h-12 justify-start rounded-2xl text-base">
                     <ArrowRight className="mr-2 h-4 w-4" />{t("下一题", "Next task")}
                   </Button>
                 </div>
@@ -1225,7 +1225,7 @@ function DelayedRecallScreen() {
   );
 }
 
-function AbstractionScreen() {
+function AbstractionScreen({ onNext }: { onNext: () => void }) {
   const { t } = useI18n();
   const pairs = [
     { left: "Train", right: "Bicycle", hint: t("它们有什么相似之处？", "How are they alike?") },
@@ -1344,7 +1344,7 @@ function AbstractionScreen() {
                     <HelpCircle className="mr-2 h-4 w-4" />{showHelp ? t("收起帮助", "Hide help") : t("查看帮助", "Show help")}
                   </Button>
 
-                  <Button disabled={filledCount === 0} className="h-12 justify-start rounded-2xl text-base">
+                  <Button onClick={onNext} disabled={filledCount === 0} className="h-12 justify-start rounded-2xl text-base">
                     <ArrowRight className="mr-2 h-4 w-4" />{t("下一题", "Next task")}
                   </Button>
                 </div>
@@ -1357,7 +1357,7 @@ function AbstractionScreen() {
   );
 }
 
-function LanguageFluencyScreen() {
+function LanguageFluencyScreen({ onNext }: { onNext: () => void }) {
   const { t } = useI18n();
   const [started, setStarted] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(60);
@@ -1543,7 +1543,7 @@ function LanguageFluencyScreen() {
                     <HelpCircle className="mr-2 h-4 w-4" />{showHelp ? t("收起帮助", "Hide help") : t("查看帮助", "Show help")}
                   </Button>
 
-                  <Button disabled={!finished} className="h-12 justify-start rounded-2xl text-base">
+                  <Button onClick={onNext} disabled={!finished} className="h-12 justify-start rounded-2xl text-base">
                     <ArrowRight className="mr-2 h-4 w-4" />{t("下一题", "Next task")}
                   </Button>
                 </div>
@@ -1556,7 +1556,7 @@ function LanguageFluencyScreen() {
   );
 }
 
-function LanguageRepeatScreen() {
+function LanguageRepeatScreen({ onNext }: { onNext: () => void }) {
   const { t } = useI18n();
   const prompts = [
     "I only know that John is the one to help today.",
@@ -1704,7 +1704,7 @@ function LanguageRepeatScreen() {
                       <ArrowRight className="mr-2 h-4 w-4" />{t("进入第 2 句", "Go to sentence 2")}
                     </Button>
                   ) : (
-                    <Button disabled={answers[1].trim().length === 0} className="h-12 justify-start rounded-2xl text-base">
+                    <Button onClick={onNext} disabled={answers[1].trim().length === 0} className="h-12 justify-start rounded-2xl text-base">
                       <ArrowRight className="mr-2 h-4 w-4" />{t("下一题", "Next task")}
                     </Button>
                   )}
@@ -1726,7 +1726,7 @@ function LanguageRepeatScreen() {
   );
 }
 
-function SerialSevenScreen() {
+function SerialSevenScreen({ onNext }: { onNext: () => void }) {
   const { t } = useI18n();
   const [answers, setAnswers] = useState(["", "", "", "", ""]);
   const [showHelp, setShowHelp] = useState(false);
@@ -1863,7 +1863,7 @@ function SerialSevenScreen() {
                     <HelpCircle className="mr-2 h-4 w-4" />{showHelp ? t("收起帮助", "Hide help") : t("查看帮助", "Show help")}
                   </Button>
 
-                  <Button disabled={filledCount === 0} className="h-12 justify-start rounded-2xl text-base">
+                  <Button onClick={onNext} disabled={filledCount === 0} className="h-12 justify-start rounded-2xl text-base">
                     <ArrowRight className="mr-2 h-4 w-4" />{t("下一题", "Next task")}
                   </Button>
                 </div>
@@ -1876,7 +1876,7 @@ function SerialSevenScreen() {
   );
 }
 
-function AttentionAScreen() {
+function AttentionAScreen({ onNext }: { onNext: () => void }) {
   const { t } = useI18n();
   const letters = ["F", "B", "A", "C", "M", "N", "A", "A", "J", "K", "L", "B", "A", "F", "A", "K", "D", "E", "A", "A", "A", "J", "A", "M", "O", "F", "A", "A", "B"];
   const [step, setStep] = useState(0);
@@ -2033,7 +2033,7 @@ function AttentionAScreen() {
                     <HelpCircle className="mr-2 h-4 w-4" />{showHelp ? t("收起帮助", "Hide help") : t("查看帮助", "Show help")}
                   </Button>
 
-                  <Button disabled={!finished} className="h-12 justify-start rounded-2xl text-base">
+                  <Button onClick={onNext} disabled={!finished} className="h-12 justify-start rounded-2xl text-base">
                     <ArrowRight className="mr-2 h-4 w-4" />{t("下一题", "Next task")}
                   </Button>
                 </div>
@@ -2046,7 +2046,7 @@ function AttentionAScreen() {
   );
 }
 
-function AttentionDigitScreen() {
+function AttentionDigitScreen({ onNext }: { onNext: () => void }) {
   const { t } = useI18n();
   const [phase, setPhase] = useState<"forward" | "backward">("forward");
   const [revealed, setRevealed] = useState(false);
@@ -2192,7 +2192,7 @@ function AttentionDigitScreen() {
                       <ArrowRight className="mr-2 h-4 w-4" />{t("进入逆向复述", "Go to backward span")}
                     </Button>
                   ) : (
-                    <Button disabled={backwardAnswer.trim().length === 0} className="h-12 justify-start rounded-2xl text-base">
+                    <Button onClick={onNext} disabled={backwardAnswer.trim().length === 0} className="h-12 justify-start rounded-2xl text-base">
                       <ArrowRight className="mr-2 h-4 w-4" />{t("下一题", "Next task")}
                     </Button>
                   )}
@@ -2210,7 +2210,7 @@ function AttentionDigitScreen() {
   );
 }
 
-function MemoryLearningScreen() {
+function MemoryLearningScreen({ onNext }: { onNext: () => void }) {
   const { t } = useI18n();
   const words = ["FACE", "VELVET", "CHURCH", "DAISY", "RED"];
   const [trial, setTrial] = useState<1 | 2>(1);
@@ -2371,7 +2371,7 @@ function MemoryLearningScreen() {
                       <ArrowRight className="mr-2 h-4 w-4" />{t("进入第 2 轮", "Go to trial 2")}
                     </Button>
                   ) : (
-                    <Button disabled={!canFinish} className="h-12 justify-start rounded-2xl text-base">
+                    <Button onClick={onNext} disabled={!canFinish} className="h-12 justify-start rounded-2xl text-base">
                       <ArrowRight className="mr-2 h-4 w-4" />{t("下一题", "Next task")}
                     </Button>
                   )}
@@ -2393,7 +2393,7 @@ function MemoryLearningScreen() {
   );
 }
 
-function NamingScreen() {
+function NamingScreen({ onNext }: { onNext: () => void }) {
   const { t } = useI18n();
   const [answers, setAnswers] = useState({ lion: "", rhino: "", camel: "" });
   const [showHelp, setShowHelp] = useState(false);
@@ -2504,7 +2504,7 @@ function NamingScreen() {
                     <HelpCircle className="mr-2 h-4 w-4" />{showHelp ? t("收起帮助", "Hide help") : t("查看帮助", "Show help")}
                   </Button>
 
-                  <Button className="h-12 justify-start rounded-2xl text-base">
+                  <Button onClick={onNext} className="h-12 justify-start rounded-2xl text-base">
                     <ArrowRight className="mr-2 h-4 w-4" />{t("下一题", "Next task")}
                   </Button>
                 </div>
