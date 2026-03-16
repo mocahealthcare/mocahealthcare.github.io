@@ -1883,10 +1883,34 @@ function AttentionAScreen({ onNext }: { onNext: () => void }) {
   const [started, setStarted] = useState(false);
   const [taps, setTaps] = useState<number[]>([]);
   const [showHelp, setShowHelp] = useState(false);
+  const [buttonFlash, setButtonFlash] = useState<"idle" | "hit" | "miss">("idle");
 
   const currentLetter = started ? letters[Math.min(step, letters.length - 1)] : null;
   const progress = Math.min(step, letters.length);
   const finished = started && step >= letters.length;
+
+  useEffect(() => {
+    if (!started || finished) return;
+
+    const timer = window.setTimeout(() => {
+      setStep((prev) => prev + 1);
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [finished, started, step]);
+
+  useEffect(() => {
+    if (buttonFlash === "idle") return;
+
+    const timer = window.setTimeout(() => setButtonFlash("idle"), 180);
+    return () => window.clearTimeout(timer);
+  }, [buttonFlash]);
+
+  function handleTap() {
+    if (!started || finished) return;
+    setTaps((prev) => [...prev, step]);
+    setButtonFlash(currentLetter === "A" ? "hit" : "miss");
+  }
 
   return (
     <Card className="rounded-3xl border-0 shadow-lg">
@@ -1931,7 +1955,7 @@ function AttentionAScreen({ onNext }: { onNext: () => void }) {
                 <div className="border-b bg-neutral-50 px-5 py-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-neutral-800">{t("字母呈现区", "Letter Display")}</p>
-                    <p className="text-xs text-neutral-500 mt-1">{t("正式版应使用自动节奏播放，这里先用原型方式模拟", "A production version should play letters automatically. This uses prototype controls for now.")}</p>
+                    <p className="text-xs text-neutral-500 mt-1">{t("点击开始后，字母会按每秒 1 个的固定节奏自动播放。", "After start, letters autoplay at a fixed pace of one per second.")}</p>
                   </div>
                   <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
                     {finished ? t("已结束", "Finished") : started ? t("进行中", "In progress") : t("未开始", "Not started")}
@@ -1955,19 +1979,12 @@ function AttentionAScreen({ onNext }: { onNext: () => void }) {
                           setStarted(true);
                           setStep(0);
                           setTaps([]);
+                          setButtonFlash("idle");
                         }}
                         variant="outline"
                         className="rounded-2xl"
                       >
                         {t("开始演示", "Start demo")}
-                      </Button>
-                      <Button
-                        onClick={() => setStep((s) => Math.min(s + 1, letters.length))}
-                        disabled={!started || finished}
-                        variant="outline"
-                        className="rounded-2xl"
-                      >
-                        {t("下一个字母", "Next letter")}
                       </Button>
                     </div>
                   </div>
@@ -1983,13 +2000,22 @@ function AttentionAScreen({ onNext }: { onNext: () => void }) {
                 </div>
 
                 <div className="bg-white p-6 md:p-8">
-                  <button
+                  <motion.button
                     type="button"
-                    onClick={() => started && !finished && setTaps((prev) => [...prev, step])}
-                    className="w-full rounded-[32px] border-2 border-neutral-300 bg-neutral-50 px-6 py-12 md:py-16 text-2xl md:text-3xl font-semibold text-neutral-900 transition active:scale-[0.99]"
+                    onClick={handleTap}
+                    whileTap={{ scale: 0.97 }}
+                    animate={
+                      buttonFlash === "hit"
+                        ? { scale: [1, 0.98, 1.02, 1], backgroundColor: ["#f5f5f5", "#dcfce7", "#bbf7d0", "#f5f5f5"], borderColor: ["#d4d4d4", "#16a34a", "#16a34a", "#d4d4d4"] }
+                        : buttonFlash === "miss"
+                          ? { scale: [1, 0.98, 1.01, 1], backgroundColor: ["#f5f5f5", "#fee2e2", "#fecaca", "#f5f5f5"], borderColor: ["#d4d4d4", "#dc2626", "#dc2626", "#d4d4d4"] }
+                          : { scale: 1, backgroundColor: "#f5f5f5", borderColor: "#d4d4d4" }
+                    }
+                    transition={{ duration: 0.2 }}
+                    className="w-full rounded-[32px] border-2 px-6 py-12 md:py-16 text-2xl md:text-3xl font-semibold text-neutral-900 shadow-sm"
                   >
                     {t("看到 A 就点击这里", "Click here when you see A")}
-                  </button>
+                  </motion.button>
                   <p className="mt-4 text-sm text-neutral-500">{t("在正式测评中，这里可以记录每次点击的时间戳和对应字母位置。", "In a formal assessment, this area can record the timestamp and letter position for each tap.")}</p>
                 </div>
               </CardContent>
@@ -2022,6 +2048,7 @@ function AttentionAScreen({ onNext }: { onNext: () => void }) {
                       setStarted(false);
                       setStep(0);
                       setTaps([]);
+                      setButtonFlash("idle");
                     }}
                     variant="outline"
                     className="h-12 justify-start rounded-2xl text-base"
